@@ -1,5 +1,8 @@
 ﻿#include "tinygl.h"
 
+IShader::~IShader() {}
+
+
 void viewport(int x, int y, int w, int h) {
     Viewport = Matrix::identity();
     Viewport[0][3] = x + w / 2.f;
@@ -111,7 +114,7 @@ Vec3f barycentric(Vec3f* pts, Vec3f P) {
     return Vec3f(1.f - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
 }
 
-void triangle(Model* model, Vec3f* pts, Vec2f* texture_coords, TGAImage& image, TGAImage& zbuffer) {
+void triangle(Model* model, Vec3f* pts, Vec2f* texture_coords, IShader& shader, TGAImage& image, TGAImage& zbuffer) {
     Vec2i bboxmin(image.get_width() - 1, image.get_height() - 1);
     Vec2i bboxmax(0, 0);
     Vec2i clamp(image.get_width() - 1, image.get_height() - 1);
@@ -141,17 +144,16 @@ void triangle(Model* model, Vec3f* pts, Vec2f* texture_coords, TGAImage& image, 
             //float z = pts[0][2] * bc_screen.x + pts[1][2] * bc_screen.y + pts[2][2] * bc_screen.z;
             //float w = pts[0][3] * bc_screen.x + pts[1][3] * bc_screen.y + pts[2][3] * bc_screen.z;
             //float w = 1;
-            int frag_depth = int(max(0, min(255, P.z)));
-            //int frag_depth = int(max(0, min(255, 255*P.z)));
             //frag_depth = P.z;
-            if (zbuffer.get(P.x, P.y)[0] < frag_depth) {
+            //float frag_depth = pts[2] * bc_clip;
+            int frag_depth = int(max(0, min(255, P.z)));
+            if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0 || zbuffer.get(P.x, P.y)[0] > frag_depth) continue;
+            bool discard = shader.fragment(bc_screen, color);
+            //if (zbuffer.get(P.x, P.y)[0] < frag_depth) {
+            if (!discard) {
                 zbuffer.set(P.x, P.y, TGAColor(frag_depth));
                 image.set(P.x, P.y, color);
             }
-            //if (zbuffer[int(P.x + P.y * width)] < P.z) {
-            //    zbuffer[int(P.x + P.y * width)] = P.z;
-            //    image.set(P.x, P.y, color);
-            //}
         }
     }
 }
