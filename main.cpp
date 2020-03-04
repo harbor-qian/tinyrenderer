@@ -20,11 +20,9 @@ Vec3f    center(0, 0, 0);
 Vec3f        up(0, 1, 0);
 
 int main(int argc, char** argv) {
-    if (2 == argc) {
-        model = new Model(argv[1]);
-    }
-    else {
-        model = new Model("obj/african_head/african_head.obj");
+    if (2 > argc) {
+        std::cerr << "Usage: " << argv[0] << " obj/model.obj" << std::endl;
+        return 1;
     }
 
     TGAImage image(width, height, TGAImage::RGB);
@@ -35,29 +33,31 @@ int main(int argc, char** argv) {
     //viewport(0, 0, width, height);
     projection(-1.f / (eye - center).norm());
     light_dir.normalize();
-    for (int i = 0; i < model->nfaces(); i++) {
-        Vec3f screen_coords[3];
-        Vec3f world_coords[3];
-        Vec2f uv[3];
-        Vec4f sc;
-        int j = model->nverts();
-        for (int j = 0; j < 3; j++) {
-            Vec3f v = model->vert(i,j);
-            sc = Viewport * Projection * ModelView * Vec4f(v.x, v.y, v.z, 1);
-            //sc = Viewport * ModelView * Vec4f(v.x, v.y, v.z, 1);
-            screen_coords[j] = Vec3f(sc.x/sc.w, sc.y/sc.w, sc.z/sc.w);
-            //screen_coords[j] = Vec3f((v.x + 1.) * width / 2., (v.y + 1.) * height / 2., v.z);
-            world_coords[j] = v;
-            uv[j] = model->uv(i,j);
-        }
-        //Vec3f n = (world_coords[2] - world_coords[0]) ^ (world_coords[1] - world_coords[0]);
-        //n.normalize();
-        //float intensity = n * light_dir;
-        //if (intensity > 0) {
+    for (int m = 1; m < argc - 1; m++) {
+        model = new Model(argv[m]);
+        for (int i = 0; i < model->nfaces(); i++) {
+            Vec3f screen_coords[3];
+            Vec3f world_coords[3];
+            Vec2f uv[3];
+            Vec4f sc;
+            int j = model->nverts();
+            for (int j = 0; j < 3; j++) {
+                Vec3f v = model->vert(i, j);
+                sc = Viewport * Projection * ModelView * Vec4f(v.x, v.y, v.z, 1);
+                //sc = Viewport * ModelView * Vec4f(v.x, v.y, v.z, 1);
+                screen_coords[j] = Vec3f(sc.x / sc.w, sc.y / sc.w, sc.z / sc.w);
+                //screen_coords[j] = Vec3f((v.x + 1.) * width / 2., (v.y + 1.) * height / 2., v.z);
+                world_coords[j] = v;
+                uv[j] = model->uv(i, j);
+            }
+            //Vec3f n = (world_coords[2] - world_coords[0]) ^ (world_coords[1] - world_coords[0]);
+            //n.normalize();
+            //float intensity = n * light_dir;
+            //if (intensity > 0) {
             triangle(model, screen_coords, uv, image, zbuffer);
-        //}
+            //}
+        }
     }
-
     image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
     zbuffer.flip_vertically();
     image.write_tga_file("output.tga");
