@@ -31,6 +31,6 @@ void triangle_s(Vec2i t0, Vec2i t1, Vec2i t2, TGAImage& image, TGAColor color);
 
 Vec3f barycentric(Vec3f* pts, Vec3f P);
 
-void triangle(Model* model, Vec3f* pts, Vec2f* texture_coords, IShader& shader, TGAImage& image, TGAImage& zbuffer);
+void triangle(Vec3f* pts, IShader& shader, TGAImage& image, TGAImage& zbuffer);
 
 

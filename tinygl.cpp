@@ -2,7 +2,6 @@
 
 IShader::~IShader() {}
 
-
 void viewport(int x, int y, int w, int h) {
     Viewport = Matrix::identity();
     Viewport[0][3] = x + w / 2.f;
@@ -30,7 +29,6 @@ void lookat(Vec3f eye, Vec3f center, Vec3f up) {
         ModelView[i][3] = -center[i];
     }
 }
-
 
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) {
     bool steep = false;
@@ -114,7 +112,7 @@ Vec3f barycentric(Vec3f* pts, Vec3f P) {
     return Vec3f(1.f - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
 }
 
-void triangle(Model* model, Vec3f* pts, Vec2f* texture_coords, IShader& shader, TGAImage& image, TGAImage& zbuffer) {
+void triangle(Vec3f* pts, IShader& shader, TGAImage& image, TGAImage& zbuffer) {
     Vec2i bboxmin(image.get_width() - 1, image.get_height() - 1);
     Vec2i bboxmax(0, 0);
     Vec2i clamp(image.get_width() - 1, image.get_height() - 1);
@@ -125,31 +123,18 @@ void triangle(Model* model, Vec3f* pts, Vec2f* texture_coords, IShader& shader, 
         }
     }
     Vec3f P;
-    Vec2f Diffuse(0,0);
     for (P.x = bboxmin.x; P.x <= bboxmax.x; P.x++) {
         for (P.y = bboxmin.y; P.y <= bboxmax.y; P.y++) {
 
             Vec3f bc_screen = barycentric(pts, P);
             if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0) continue;
             P.z = 0;
-            Diffuse[0] = 0;
-            Diffuse[1] = 0;
             for (int i = 0; i < 3; i++) P.z += pts[i][2] * bc_screen[i];
-            for (int i = 0; i < 3; i++) {
-                Diffuse[0] += texture_coords[i][0] * bc_screen[i];
-                Diffuse[1] += texture_coords[i][1] * bc_screen[i];
-            }
-            TGAColor color = model->diffuse(Diffuse);
-            //TGAColor color = TGAColor(Diffuse[0], Diffuse[1], 0.5, 1);
-            //float z = pts[0][2] * bc_screen.x + pts[1][2] * bc_screen.y + pts[2][2] * bc_screen.z;
-            //float w = pts[0][3] * bc_screen.x + pts[1][3] * bc_screen.y + pts[2][3] * bc_screen.z;
-            //float w = 1;
-            //frag_depth = P.z;
-            //float frag_depth = pts[2] * bc_clip;
+            //TGAColor color = model->diffuse(Diffuse);
+            TGAColor color;
             int frag_depth = int(max(0, min(255, P.z)));
             if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0 || zbuffer.get(P.x, P.y)[0] > frag_depth) continue;
             bool discard = shader.fragment(bc_screen, color);
-            //if (zbuffer.get(P.x, P.y)[0] < frag_depth) {
             if (!discard) {
                 zbuffer.set(P.x, P.y, TGAColor(frag_depth));
                 image.set(P.x, P.y, color);
