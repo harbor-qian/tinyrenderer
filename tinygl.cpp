@@ -112,7 +112,7 @@ Vec3f barycentric(Vec3f* pts, Vec3f P) {
     return Vec3f(1.f - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
 }
 
-void triangle(Vec3f* pts, IShader& shader, TGAImage& image, TGAImage& zbuffer) {
+void triangle(Vec3f* pts, Vec3f* world_coords, IShader& shader, TGAImage& image, TGAImage& zbuffer) {
     Vec2i bboxmin(image.get_width() - 1, image.get_height() - 1);
     Vec2i bboxmax(0, 0);
     Vec2i clamp(image.get_width() - 1, image.get_height() - 1);
@@ -127,13 +127,17 @@ void triangle(Vec3f* pts, IShader& shader, TGAImage& image, TGAImage& zbuffer) {
         for (P.y = bboxmin.y; P.y <= bboxmax.y; P.y++) {
 
             Vec3f bc_screen = barycentric(pts, P);
+            //Vec3f bc_clip = Vec3f(bc_screen.x / pts[0][2], bc_screen.y / pts[1][2], bc_screen.z / pts[2][2]);
+            //Vec3f bc_clip = barycentric(world_coords, P);
+            Vec3f bc_clip = barycentric(world_coords, P);
+            //bc_clip = bc_clip / (bc_clip.x + bc_clip.y + bc_clip.z);
             if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0) continue;
             P.z = 0;
             for (int i = 0; i < 3; i++) P.z += pts[i][2] * bc_screen[i];
-            //TGAColor color = model->diffuse(Diffuse);
             TGAColor color;
             int frag_depth = int(max(0, min(255, P.z)));
             if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0 || zbuffer.get(P.x, P.y)[0] > frag_depth) continue;
+            //bool discard = shader.fragment(bc_clip, color);
             bool discard = shader.fragment(bc_screen, color);
             if (!discard) {
                 zbuffer.set(P.x, P.y, TGAColor(frag_depth));
