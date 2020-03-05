@@ -5,8 +5,8 @@
 #include "tinygl.h"
 
 Model* model = NULL;
-const int width  = 1024;
-const int height = 1024;
+const int width  = 800;
+const int height = 800;
 
 Matrix ModelView;
 Matrix Projection;
@@ -14,8 +14,8 @@ Matrix Viewport;
 
 //Vec3f light_dir(0, 0, -1);
 Vec3f light_dir(1, 1, 1);
-Vec3f       eye(1, 1, 3);
-//Vec3f       eye(0, 0, 3);
+//Vec3f       eye(1, 1, 3);
+Vec3f       eye(0, 0, 3);
 Vec3f    center(0, 0, 0);
 Vec3f        up(0, 1, 0);
 
@@ -27,7 +27,7 @@ struct Shader : public IShader {
     virtual Vec4f vertex(int iface, int nthvert) {
         varying_uv.set_col(nthvert, model->uv(iface, nthvert));
         Vec4f gl_Vertex = embed<4>(model->vert(iface, nthvert)); // read the vertex from .obj file
-        return Viewport * Projection * ModelView * gl_Vertex; // transform it to screen coordinates
+        return Projection * ModelView * gl_Vertex; // transform it to screen coordinates
     }
 
     virtual bool fragment(Vec3f bar, TGAColor& color) {
@@ -64,25 +64,18 @@ int main(int argc, char** argv) {
         shader.uniform_M = Projection * ModelView;
         shader.uniform_MIT = (Projection * ModelView).invert_transpose();
         for (int i = 0; i < model->nfaces(); i++) {
-            Vec3f screen_coords[3];
-            Vec3f world_coords[3];
-            //Vec2f uv[3];
+            Vec4f clipc[3];
             Vec4f sc;
             int j = model->nverts();
             for (int j = 0; j < 3; j++) {
                 Vec3f v = model->vert(i, j);
-                //sc = Viewport * Projection * ModelView * Vec4f(v.x, v.y, v.z, 1);
-                sc = shader.vertex(i,j);
-                screen_coords[j] = Vec3f(sc.x / sc.w, sc.y / sc.w, sc.z / sc.w);
-                world_coords[j] = Vec3f(sc.x, sc.y, sc.z);
-                //screen_coords[j] = Vec3f((v.x + 1.) * width / 2., (v.y + 1.) * height / 2., v.z);
-                //uv[j] = model->uv(i, j);
+                clipc[j] = shader.vertex(i,j);
             }
             //Vec3f n = (world_coords[2] - world_coords[0]) ^ (world_coords[1] - world_coords[0]);
             //n.normalize();
             //float intensity = n * light_dir;
             //if (intensity > 0) {
-            triangle(screen_coords, world_coords, shader, image, zbuffer);
+            triangle(clipc, shader, image, zbuffer);
             //}
         }
     }
