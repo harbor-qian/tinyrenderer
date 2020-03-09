@@ -1,0 +1,1 @@
+Debug\tinyrenderer.exe obj\diablo3_pose\diablo3_pose.obj

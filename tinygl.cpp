@@ -1,33 +1,47 @@
 ﻿#include "tinygl.h"
+#include <cmath>
 
 IShader::~IShader() {}
 
 void viewport(int x, int y, int w, int h) {
     Viewport = Matrix::identity();
-    Viewport[0][3] = x + w / 2.f;
-    Viewport[1][3] = y + h / 2.f;
-    Viewport[2][3] = 255.f / 2.f;
     Viewport[0][0] = w / 2.f;
+    Viewport[0][3] = x + w / 2.f;
     Viewport[1][1] = h / 2.f;
-    Viewport[2][2] = 255.f / 2.f;
+    Viewport[1][3] = y + h / 2.f;
+    Viewport[2][2] = -255/2.f;
+    Viewport[2][3] = 255/2.f;
 }
 
-void projection(float coeff) {
+void projection(float fovy, float aspect, float n, float f) {  // n, f>0
     Projection = Matrix::identity();
-    Projection[3][2] = coeff;
+    //Projection[3][2] = coeff;
+    Projection[0][0] = fovy/aspect;  // tan(fovy/2)*n = t;
+    Projection[1][1] = fovy;
+    Projection[2][2] = -(f+n)/(f-n);
+    Projection[2][3] = -2*f*n/(f-n);
+    Projection[3][2] = -1;
+    Projection[3][3] = 0;
 }
 
 void lookat(Vec3f eye, Vec3f center, Vec3f up) {
-    Vec3f z = (eye - center).normalize();
-    Vec3f x = cross(up, z).normalize();
-    Vec3f y = cross(z, x).normalize();
+    Vec3f z = (eye - center).normalize();  // -forward
+    Vec3f x = cross(up, z).normalize();    // side
+    Vec3f y = cross(z, x).normalize();     // up
     ModelView = Matrix::identity();
+    Matrix Translate = Matrix::identity();
+    Vec3f tmp;
+    tmp[0] = (eye * x);
+    tmp[1] = (eye * y);
+    tmp[2] = (eye * z);
     for (int i = 0; i < 3; i++) {
         ModelView[0][i] = x[i];
         ModelView[1][i] = y[i];
         ModelView[2][i] = z[i];
-        ModelView[i][3] = -center[i];
+    //    ModelView[i][3] = -tmp[i];
+        Translate[i][3] = -eye[i];
     }
+    ModelView = ModelView * Translate;
 }
 
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) {
@@ -133,7 +147,6 @@ void triangle(Vec4f* clipc, IShader& shader, TGAImage& image, TGAImage& zbuffer)
             Vec3f bc_screen = barycentric(pts, P);
             Vec3f bc_clip = Vec3f(bc_screen.x / clipc[0][3], bc_screen.y / clipc[1][3], bc_screen.z / clipc[2][3]);
             bc_clip = bc_clip / (bc_clip.x + bc_clip.y + bc_clip.z);
-            if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0) continue;
             P.z = 0;
             for (int i = 0; i < 3; i++) P.z += pts[i][2] * bc_screen[i];
             TGAColor color;

@@ -22,7 +22,7 @@ struct IShader {
 };
 
 void viewport(int x, int y, int w, int h);
-void projection(float coeff); // coeff = -1/c
+void projection(float fov, float aspect, float n, float f);
 void lookat(Vec3f eye, Vec3f center, Vec3f up);
 
 void line(int x0, int y0, int x1, int y1, TGAImage& image, TGAColor color);
