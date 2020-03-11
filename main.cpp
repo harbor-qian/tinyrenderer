@@ -14,9 +14,11 @@ Matrix Viewport;
 
 //Vec3f light_dir(0, 0, -1);
 Vec3f light_dir(1, 1, 1);
-Vec3f       eye(1, 1, 2);
-//Vec3f       eye(0, 0, 2);
-Vec3f    center(0, 0, -10);
+//Vec3f       eye(1, 1, 0);
+Vec3f       eye(0, 0, 0);
+//Vec3f       eye(0, 0, 3);
+Vec3f    center(0, 0, -3);
+//Vec3f    center(1, 1, -3);
 Vec3f        up(0, 1, 0);
 
 struct Shader : public IShader {
@@ -28,12 +30,14 @@ struct Shader : public IShader {
 
 
     virtual Vec4f vertex(int iface, int nthvert) {
-        varying_uv.set_col(nthvert, model->uv(iface, nthvert));
         varying_nrm.set_col(nthvert, proj<3>((Projection * ModelView).invert_transpose() * embed<4>(model->normal(iface, nthvert), 0.f)));
 
-        Vec4f gl_Vertex = embed<4>(model->vert(iface, nthvert)); // read the vertex from .obj file
+        Vec4f gl_Vertex = ModelView *embed<4>(model->vert(iface, nthvert)); // read the vertex from .obj file
+        gl_Vertex = Projection * ModelView *embed<4>(model->vert(iface, nthvert)); // read the vertex from .obj file
+        varying_uv.set_col(nthvert, model->uv(iface, nthvert));
+        //varying_uv.set_col(nthvert, model->uv(iface, nthvert)/gl_Vertex[3]);
         ndc_tri.set_col(nthvert, proj<3>(gl_Vertex / gl_Vertex[3]));
-        return Projection * ModelView * gl_Vertex; // transform it to screen coordinates
+        return gl_Vertex; // transform it to screen coordinates
     }
 
     virtual bool fragment(Vec3f bar, TGAColor& color) {
@@ -78,12 +82,14 @@ int main(int argc, char** argv) {
     }
 
     TGAImage image(width, height, TGAImage::RGB);
-    TGAImage zbuffer(width, height, TGAImage::GRAYSCALE);
+    //TGAImage zbuffer(width, height, TGAImage::GRAYSCALE);
+    float* zbuffer = new float[width * height];
 
     lookat(eye, center, up);
+    //float n = eye.z - 1;
     float n = 1;
-    float f = 10;
-    float t = 1;   //max y
+    float f = 3;
+    float t = 1;   //max yG
     float r = 1;   //max x
     float aspect = r/t;
     float fovy = n / t;
@@ -115,9 +121,9 @@ int main(int argc, char** argv) {
         }
     }
     image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
-    zbuffer.flip_vertically();
+    //zbuffer.flip_vertically();
     image.write_tga_file("output.tga");
-    zbuffer.write_tga_file("zbuffer.tga");
+    //zbuffer.write_tga_file("zbuffer.tga");
     delete model;
     return 0;
 }

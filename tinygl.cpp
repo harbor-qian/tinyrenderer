@@ -9,8 +9,12 @@ void viewport(int x, int y, int w, int h) {
     Viewport[0][3] = x + w / 2.f;
     Viewport[1][1] = h / 2.f;
     Viewport[1][3] = y + h / 2.f;
-    Viewport[2][2] = -255/2.f;
-    Viewport[2][3] = 255/2.f;
+    //Viewport[2][2] = -255/2.f;
+    //Viewport[2][3] = 255/2.f;
+    float n = 1;
+    float f = 3;
+    Viewport[2][2] = (f-n)/2.f;
+    Viewport[2][3] = (f+n)/2.f;
 }
 
 void projection(float fovy, float aspect, float n, float f) {  // n, f>0
@@ -34,6 +38,7 @@ void lookat(Vec3f eye, Vec3f center, Vec3f up) {
     tmp[0] = (eye * x);
     tmp[1] = (eye * y);
     tmp[2] = (eye * z);
+    eye[2] += 2;  //hack the obj position as the origin is at (0,0,0)
     for (int i = 0; i < 3; i++) {
         ModelView[0][i] = x[i];
         ModelView[1][i] = y[i];
@@ -41,6 +46,7 @@ void lookat(Vec3f eye, Vec3f center, Vec3f up) {
     //    ModelView[i][3] = -tmp[i];
         Translate[i][3] = -eye[i];
     }
+    // (Translate * ModelView)-1 = (ModelView)T * Translate(-e)
     ModelView = ModelView * Translate;
 }
 
@@ -126,36 +132,49 @@ Vec3f barycentric(Vec3f* pts, Vec3f P) {
     return Vec3f(1.f - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
 }
 
-void triangle(Vec4f* clipc, IShader& shader, TGAImage& image, TGAImage& zbuffer) {
+//void triangle(Vec4f* clipc, IShader& shader, TGAImage& image, TGAImage& zbuffer) {
+void triangle(Vec4f* clipc, IShader& shader, TGAImage& image, float* zbuffer) {
     Vec2i bboxmin(image.get_width() - 1, image.get_height() - 1);
     Vec2i bboxmax(0, 0);
     Vec2i clamp(image.get_width() - 1, image.get_height() - 1);
     Vec3f pts[3];
     for (int i = 0; i < 3; i++) {
         pts[i] = proj<3>(Viewport * clipc[i] / clipc[i][3]);
+        //pts[i][2] = clipc[i][3];
     }
+    
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 2; j++) {
             bboxmin[j] = max(0, min(bboxmin[j], pts[i][j]));
             bboxmax[j] = min(clamp[j], max(bboxmax[j], pts[i][j]));
         }
     }
-    Vec3f P;
+    Vec3i P;
     for (P.x = bboxmin.x; P.x <= bboxmax.x; P.x++) {
         for (P.y = bboxmin.y; P.y <= bboxmax.y; P.y++) {
 
             Vec3f bc_screen = barycentric(pts, P);
+            // u/z, v/z interp, calculate 1/z barycentric first
             Vec3f bc_clip = Vec3f(bc_screen.x / clipc[0][3], bc_screen.y / clipc[1][3], bc_screen.z / clipc[2][3]);
-            bc_clip = bc_clip / (bc_clip.x + bc_clip.y + bc_clip.z);
-            P.z = 0;
-            for (int i = 0; i < 3; i++) P.z += pts[i][2] * bc_screen[i];
+            // w = -z
+            float frag_depth = -1/(bc_clip.x + bc_clip.y + bc_clip.z);
+            bc_clip = bc_clip / (bc_clip.x + bc_clip.y + bc_clip.z);// two "-" cancel out
+            //frag_depth = 0;
+            //for (int i = 0; i < 3; i++) frag_depth += clipc[2][i] * bc_clip[i];
+            //float n = 2;
+            //float f = 5;
+            //P.z = (f-P.z) / (f - n);
+
+            //int frag_depth = int(max(0, min(255, P.z*255.0f)));
+            //if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0 || zbuffer.get(P.x, P.y)[0] > frag_depth) continue;
+            //printf("%f\n", frag_depth);
+            if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0 || zbuffer[P.x + P.y * image.get_width()] > frag_depth) continue;
             TGAColor color;
-            int frag_depth = int(max(0, min(255, P.z)));
-            if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0 || zbuffer.get(P.x, P.y)[0] > frag_depth) continue;
             bool discard = shader.fragment(bc_clip, color);
             //bool discard = shader.fragment(bc_screen, color);
             if (!discard) {
-                zbuffer.set(P.x, P.y, TGAColor(frag_depth));
+                zbuffer[P.x + P.y * image.get_width()] = frag_depth;
+                //zbuffer.set(P.x, P.y, TGAColor(frag_depth));
                 image.set(P.x, P.y, color);
             }
         }
