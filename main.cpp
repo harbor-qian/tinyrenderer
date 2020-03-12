@@ -106,17 +106,29 @@ int main(int argc, char** argv) {
         shader.uniform_MIT = (Projection * ModelView).invert_transpose();
         for (int i = 0; i < model->nfaces(); i++) {
             Vec4f clipc[3];
+            Vec3f clip[3];
             Vec4f sc;
             int j = model->nverts();
             for (int j = 0; j < 3; j++) {
                 Vec3f v = model->vert(i, j);
-                clipc[j] = shader.vertex(i,j);
+                clipc[j] = shader.vertex(i, j);
+                //clip[j] = proj<3>(clipc[j]);
+                //clip[j] = proj<3>(ModelView * embed<4>(v));
+
             }
+            Vec4f P10 = clipc[1] - clipc[0];
+            Vec4f P20 = clipc[2] - clipc[0];
+            //bool backface = clip[0]* cross(clip[2] - clip[0], clip[1] - clip[0]) < 0;
+            bool backface = P20.x * P10.y - P10.x * P20.y > 0; //>0, on P10's right, <0, on P10's left, frontface
+
+            //assert(backface == backface2);
+
             //Vec3f n = (world_coords[2] - world_coords[0]) ^ (world_coords[1] - world_coords[0]);
             //n.normalize();
             //float intensity = n * light_dir;
             //if (intensity > 0) {
-            triangle(clipc, shader, image, zbuffer);
+            if (!backface)
+                triangle(clipc, shader, image, zbuffer);
             //}
         }
     }
