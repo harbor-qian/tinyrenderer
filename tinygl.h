@@ -31,6 +31,8 @@ void triangle_s(Vec2i t0, Vec2i t1, Vec2i t2, TGAImage& image, TGAColor color);
 
 Vec3f barycentric(Vec3f* pts, Vec3f P);
 
+float EdgeFunc(const Vec3f& p0, const Vec3f& p1, const Vec3f& p2);
+
 //void triangle(Vec4f* pts, IShader& shader, TGAImage& image, TGAImage& zbuffer);
 void triangle(Vec4f* pts, IShader& shader, TGAImage& image, float* zbuffer);
 

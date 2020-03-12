@@ -1,5 +1,6 @@
 ﻿#include <vector>
 #include <windows.h>
+#include <climits>
 #include "tgaimage.h"
 #include "model.h"
 #include "tinygl.h"
@@ -14,10 +15,10 @@ Matrix Viewport;
 
 //Vec3f light_dir(0, 0, -1);
 Vec3f light_dir(1, 1, 1);
-//Vec3f       eye(1, 1, 0);
-Vec3f       eye(0, 0, 0);
+Vec3f       eye(1, 1, 0);
+//Vec3f       eye(0, 0, 0);
 //Vec3f       eye(0, 0, 3);
-Vec3f    center(0, 0, -3);
+Vec3f    center(0, 0, -10);
 //Vec3f    center(1, 1, -3);
 Vec3f        up(0, 1, 0);
 
@@ -84,6 +85,8 @@ int main(int argc, char** argv) {
     TGAImage image(width, height, TGAImage::RGB);
     //TGAImage zbuffer(width, height, TGAImage::GRAYSCALE);
     float* zbuffer = new float[width * height];
+    for (int i = 0; i < width * height; i++)
+        zbuffer[i] = FLT_MAX;
 
     lookat(eye, center, up);
     //float n = eye.z - 1;
@@ -127,7 +130,7 @@ int main(int argc, char** argv) {
             //n.normalize();
             //float intensity = n * light_dir;
             //if (intensity > 0) {
-            if (!backface)
+//            if (!backface)
                 triangle(clipc, shader, image, zbuffer);
             //}
         }

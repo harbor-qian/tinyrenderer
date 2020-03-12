@@ -1,5 +1,6 @@
 ﻿#include "tinygl.h"
 #include <cmath>
+//FILE* fp = fopen("z.txt", "w");
 
 IShader::~IShader() {}
 
@@ -132,15 +133,22 @@ Vec3f barycentric(Vec3f* pts, Vec3f P) {
     return Vec3f(1.f - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
 }
 
+float EdgeFunc(const Vec3f& p0, const Vec3f& p1, const Vec3f& p2) {
+    return ((p2.x - p0.x) * (p1.y - p0.y) - (p2.y - p0.y) * (p1.x - p0.x));
+} // note that the result of edge function could be represent as area as well.
+
+
 //void triangle(Vec4f* clipc, IShader& shader, TGAImage& image, TGAImage& zbuffer) {
 void triangle(Vec4f* clipc, IShader& shader, TGAImage& image, float* zbuffer) {
     Vec2i bboxmin(image.get_width() - 1, image.get_height() - 1);
     Vec2i bboxmax(0, 0);
     Vec2i clamp(image.get_width() - 1, image.get_height() - 1);
     Vec3f pts[3];
+    //fprintf(fp, "new triangle\n");
+
     for (int i = 0; i < 3; i++) {
         pts[i] = proj<3>(Viewport * clipc[i] / clipc[i][3]);
-        //pts[i][2] = clipc[i][3];
+        pts[i][2] = clipc[i][3];
     }
     
     for (int i = 0; i < 3; i++) {
@@ -150,15 +158,23 @@ void triangle(Vec4f* clipc, IShader& shader, TGAImage& image, float* zbuffer) {
         }
     }
     Vec3i P;
-    for (P.x = bboxmin.x; P.x <= bboxmax.x; P.x++) {
-        for (P.y = bboxmin.y; P.y <= bboxmax.y; P.y++) {
+    float area = EdgeFunc(pts[0], pts[1], pts[2]);
+    for (P.y = bboxmin.y; P.y <= bboxmax.y; P.y++) {
+        for (P.x = bboxmin.x; P.x <= bboxmax.x; P.x++) {
 
             Vec3f bc_screen = barycentric(pts, P);
+            //Vec3f bc_screen;
+            bc_screen.x= EdgeFunc(pts[1], pts[2], P)/area;
+            bc_screen.y= EdgeFunc(pts[2], pts[0], P)/area;
+            bc_screen.z= EdgeFunc(pts[0], pts[1], P)/area;
             // u/z, v/z interp, calculate 1/z barycentric first
             Vec3f bc_clip = Vec3f(bc_screen.x / clipc[0][3], bc_screen.y / clipc[1][3], bc_screen.z / clipc[2][3]);
             // w = -z
-            float frag_depth = -1/(bc_clip.x + bc_clip.y + bc_clip.z);
-            bc_clip = bc_clip / (bc_clip.x + bc_clip.y + bc_clip.z);// two "-" cancel out
+            float w = 1/(bc_clip.x + bc_clip.y + bc_clip.z);
+            //fprintf(fp, "%f\n", w);
+
+            float frag_depth = w;
+            bc_clip = bc_clip*w;// two "-" cancel out
             //frag_depth = 0;
             //for (int i = 0; i < 3; i++) frag_depth += clipc[2][i] * bc_clip[i];
             //float n = 2;
@@ -168,7 +184,7 @@ void triangle(Vec4f* clipc, IShader& shader, TGAImage& image, float* zbuffer) {
             //int frag_depth = int(max(0, min(255, P.z*255.0f)));
             //if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0 || zbuffer.get(P.x, P.y)[0] > frag_depth) continue;
             //printf("%f\n", frag_depth);
-            if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0 || zbuffer[P.x + P.y * image.get_width()] > frag_depth) continue;
+            if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0 || zbuffer[P.x + P.y * image.get_width()] < frag_depth) continue;
             TGAColor color;
             bool discard = shader.fragment(bc_clip, color);
             //bool discard = shader.fragment(bc_screen, color);
