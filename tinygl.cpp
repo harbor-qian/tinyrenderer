@@ -150,6 +150,12 @@ void triangle(Vec4f* clipc, IShader& shader, TGAImage& image, float* zbuffer) {
         pts[i] = proj<3>(Viewport * clipc[i] / clipc[i][3]);
         pts[i][2] = clipc[i][3];
     }
+    Vec3f P10 = pts[1]-pts[0];
+    Vec3f P20 = pts[2]-pts[0];
+    // z component of (P10 x P20), ccw  |P10.x, P10.y|, same as edge function
+    //                                  |P20.x, P20.y|
+    bool frontface = P10.x * P20.y - P10.y * P20.x > 0; //>0, P1 on P20's right, frontface; <0, on P20's left
+    if (!frontface) return;
     
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 2; j++) {

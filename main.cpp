@@ -118,20 +118,11 @@ int main(int argc, char** argv) {
                 //clip[j] = proj<3>(clipc[j]);
                 //clip[j] = proj<3>(ModelView * embed<4>(v));
             }
-            Vec4f P10 = clipc[1] - clipc[0];
-            Vec4f P20 = clipc[2] - clipc[0];
-            //bool backface = clip[0]* cross(clip[2] - clip[0], clip[1] - clip[0]) < 0;
-            // z component of (P10 x P20), ccw  |P10.x, P10.y|, same as edge function
-            //                                  |P20.x, P20.y|
-            bool frontface = P10.x * P20.y - P10.y * P20.x > 0; //>0, P1 on P20's right, frontface; <0, on P20's left
-
-            //assert(backface == backface2);
 
             //Vec3f n = (world_coords[2] - world_coords[0]) ^ (world_coords[1] - world_coords[0]);
             //n.normalize();
             //float intensity = n * light_dir;
             //if (intensity > 0) {
-            if (frontface)
                 triangle(clipc, shader, image, zbuffer);
             //}
         }
