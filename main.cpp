@@ -15,8 +15,8 @@ Matrix Viewport;
 
 //Vec3f light_dir(0, 0, -1);
 Vec3f light_dir(1, 1, 1);
-Vec3f       eye(1, 1, 0);
-//Vec3f       eye(0, 0, 0);
+//Vec3f       eye(1, 1, 0);
+Vec3f       eye(0, 0, 0);
 //Vec3f       eye(0, 0, 3);
 Vec3f    center(0, 0, -10);
 //Vec3f    center(1, 1, -3);
@@ -117,12 +117,13 @@ int main(int argc, char** argv) {
                 clipc[j] = shader.vertex(i, j);
                 //clip[j] = proj<3>(clipc[j]);
                 //clip[j] = proj<3>(ModelView * embed<4>(v));
-
             }
             Vec4f P10 = clipc[1] - clipc[0];
             Vec4f P20 = clipc[2] - clipc[0];
             //bool backface = clip[0]* cross(clip[2] - clip[0], clip[1] - clip[0]) < 0;
-            bool backface = P20.x * P10.y - P10.x * P20.y > 0; //>0, on P10's right, <0, on P10's left, frontface
+            // z component of (P10 x P20), ccw  |P10.x, P10.y|, same as edge function
+            //                                  |P20.x, P20.y|
+            bool frontface = P10.x * P20.y - P10.y * P20.x > 0; //>0, P1 on P20's right, frontface; <0, on P20's left
 
             //assert(backface == backface2);
 
@@ -130,7 +131,7 @@ int main(int argc, char** argv) {
             //n.normalize();
             //float intensity = n * light_dir;
             //if (intensity > 0) {
-//            if (!backface)
+            if (frontface)
                 triangle(clipc, shader, image, zbuffer);
             //}
         }

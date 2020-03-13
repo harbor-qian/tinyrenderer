@@ -164,12 +164,11 @@ void triangle(Vec4f* clipc, IShader& shader, TGAImage& image, float* zbuffer) {
 
             Vec3f bc_screen = barycentric(pts, P);
             //Vec3f bc_screen;
-            bc_screen.x= EdgeFunc(pts[1], pts[2], P)/area;
-            bc_screen.y= EdgeFunc(pts[2], pts[0], P)/area;
-            bc_screen.z= EdgeFunc(pts[0], pts[1], P)/area;
+            //bc_screen.x= EdgeFunc(pts[1], pts[2], P)/area;
+            //bc_screen.y= EdgeFunc(pts[2], pts[0], P)/area;
+            //bc_screen.z= EdgeFunc(pts[0], pts[1], P)/area;
             // u/z, v/z interp, calculate 1/z barycentric first
             Vec3f bc_clip = Vec3f(bc_screen.x / clipc[0][3], bc_screen.y / clipc[1][3], bc_screen.z / clipc[2][3]);
-            // w = -z
             float w = 1/(bc_clip.x + bc_clip.y + bc_clip.z);
             //fprintf(fp, "%f\n", w);
 
