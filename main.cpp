@@ -116,13 +116,16 @@ int main(int argc, char** argv) {
                 Vec3f v = model->vert(i, j);
                 clipc[j] = shader.vertex(i, j);
                 //clip[j] = proj<3>(clipc[j]);
-                //clip[j] = proj<3>(ModelView * embed<4>(v));
+                clip[j] = proj<3>(ModelView * embed<4>(v));
             }
+            // (p0-eye(0,0,0)) * cross(p20,p10)
+            bool backface = clip[0] * cross(clip[2] - clip[0], clip[1] - clip[0]);
 
             //Vec3f n = (world_coords[2] - world_coords[0]) ^ (world_coords[1] - world_coords[0]);
             //n.normalize();
             //float intensity = n * light_dir;
             //if (intensity > 0) {
+            if (backface)
                 triangle(clipc, shader, image, zbuffer);
             //}
         }
