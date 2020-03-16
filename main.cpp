@@ -1,11 +1,13 @@
 ﻿#include <vector>
 #include <windows.h>
 #include <climits>
+#include <ctime>
 #include "tgaimage.h"
 #include "model.h"
 #include "tinygl.h"
 
-Model* model = NULL;
+Model *model=NULL;
+
 const int width  = 800;
 const int height = 800;
 
@@ -76,11 +78,13 @@ struct Shader : public IShader {
         return false;
     }
 };
+
 int main(int argc, char** argv) {
     if (2 > argc) {
         std::cerr << "Usage: " << argv[0] << " obj/model.obj" << std::endl;
         return 1;
     }
+    Model *model_list[10];
 
     TGAImage image(width, height, TGAImage::RGB);
     //TGAImage zbuffer(width, height, TGAImage::GRAYSCALE);
@@ -102,6 +106,8 @@ int main(int argc, char** argv) {
     viewport(0, 0, width, height);
     light_dir.normalize();
     //light_dir = proj<3>((Projection * ModelView * embed<4>(light_dir, 0.f))).normalize();
+
+    double start = clock();
     for (int m = 1; m < argc; m++) {
         model = new Model(argv[m]);
         Shader shader;
@@ -130,6 +136,8 @@ int main(int argc, char** argv) {
             //}
         }
     }
+    double end = clock();
+    printf("time used %.5lf\n", (end-start)/CLOCKS_PER_SEC);
     image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
     //zbuffer.flip_vertically();
     image.write_tga_file("output.tga");
