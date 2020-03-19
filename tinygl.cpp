@@ -2,6 +2,8 @@
 #include <cmath>
 //FILE* fp = fopen("z.txt", "w");
 
+//#define ORTHO_PROJ
+
 IShader::~IShader() {}
 
 void viewport(int x, int y, int w, int h) {
@@ -21,12 +23,19 @@ void viewport(int x, int y, int w, int h) {
 void projection(float fovy, float aspect, float n, float f) {  // n, f>0
     Projection = Matrix::identity();
     //Projection[3][2] = coeff;
+#ifdef ORTHO_PROJ
+    Projection[0][0] = fovy / aspect;
+    Projection[1][1] = fovy;
+    Projection[2][2] = -2/(f-n);
+    Projection[2][3] = -(f + n) / (f - n);
+#else
     Projection[0][0] = fovy/aspect;  // tan(fovy/2)*n = t;
     Projection[1][1] = fovy;
     Projection[2][2] = -(f+n)/(f-n);
     Projection[2][3] = -2*f*n/(f-n);
     Projection[3][2] = -1;
     Projection[3][3] = 0;
+#endif
 }
 
 void lookat(Vec3f eye, Vec3f center, Vec3f up) {
@@ -148,7 +157,7 @@ void triangle(Vec4f* clipc, IShader& shader, TGAImage& image, float* zbuffer) {
 
     for (int i = 0; i < 3; i++) {
         pts[i] = proj<3>(Viewport * clipc[i] / clipc[i][3]);
-        pts[i][2] = clipc[i][3];
+        pts[i][2] = -clipc[i][3];
     }
     float area = EdgeFunc(pts[0], pts[1], pts[2]);
     Vec3f P10 = pts[1]-pts[0];
@@ -181,8 +190,11 @@ void triangle(Vec4f* clipc, IShader& shader, TGAImage& image, float* zbuffer) {
 
             float frag_depth = w;
             bc_clip = bc_clip*w;// two "-" cancel out
-            //frag_depth = 0;
-            //for (int i = 0; i < 3; i++) frag_depth += clipc[2][i] * bc_clip[i];
+            
+#ifdef ORTHO_PROJ
+            frag_depth = 0;
+            for (int i = 0; i < 3; i++) frag_depth += clipc[i][2] * bc_clip[i];
+#endif
             //float n = 2;
             //float f = 5;
             //P.z = (f-P.z) / (f - n);
