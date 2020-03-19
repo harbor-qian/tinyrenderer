@@ -17,11 +17,14 @@ Matrix Viewport;
 
 //Vec3f light_dir(0, 0, -1);
 Vec3f light_dir(1, 1, 1);
-//Vec3f       eye(1, 1, 3);
-Vec3f       eye(0, 0, 0);
 //Vec3f       eye(0, 0, 3);
+#ifdef ORTHO_PROJ
+Vec3f    center(0, 0, -2);
+Vec3f       eye(2, 2, 0);
+#else
+Vec3f       eye(0, 0, 0);
 Vec3f    center(0, 0, -10);
-//Vec3f    center(1, 1, -3);
+#endif
 Vec3f        up(0, 1, 0);
 
 struct Shader : public IShader {

@@ -2,7 +2,6 @@
 #include <cmath>
 //FILE* fp = fopen("z.txt", "w");
 
-//#define ORTHO_PROJ
 
 IShader::~IShader() {}
 
