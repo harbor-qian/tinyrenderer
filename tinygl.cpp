@@ -13,6 +13,7 @@ void viewport(int x, int y, int w, int h) {
     Viewport[1][3] = y + h / 2.f;
     //Viewport[2][2] = -255/2.f;
     //Viewport[2][3] = 255/2.f;
+    // hack, doesn't use this 
     float n = 1;
     float f = 3;
     Viewport[2][2] = (f-n)/2.f;
